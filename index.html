@@ -101,9 +101,9 @@ main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28p
 /* MODAL */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.82); backdrop-filter:blur(7px); z-index:200; display:none; align-items:flex-start; justify-content:center; padding:36px 16px; overflow-y:auto; }
 .modal-overlay.open { display:flex; }
-.modal { background:linear-gradient(160deg,#051a08 0%,#0a2e10 100%); border:2px solid var(--border); border-radius:16px; width:100%; max-width:560px; box-shadow:0 0 60px rgba(10,60,20,0.7), 0 0 0 1px rgba(201,162,39,0.2); animation:modal-in 0.26s cubic-bezier(0.22,1,0.36,1); overflow:hidden; }
+.modal { background:linear-gradient(160deg,#051a08 0%,#0a2e10 100%); border:2px solid var(--border); border-radius:16px; width:100%; max-width:560px; box-shadow:0 0 60px rgba(10,60,20,0.7), 0 0 0 1px rgba(201,162,39,0.2); animation:modal-in 0.26s cubic-bezier(0.22,1,0.36,1); overflow:visible; }
 @keyframes modal-in { from{opacity:0;transform:translateY(-18px) scale(0.96)} to{opacity:1;transform:none} }
-.modal-top { background:rgba(0,0,0,0.35); border-bottom:1px solid rgba(26,107,42,0.5); padding:10px 16px; display:flex; justify-content:flex-end; }
+.modal-top { background:rgba(0,0,0,0.35); border-bottom:1px solid rgba(26,107,42,0.5); padding:10px 16px; display:flex; justify-content:flex-end; border-radius:14px 14px 0 0; }
 .modal-close { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:6px; width:30px; height:30px; color:var(--muted); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
 .modal-close:hover { color:var(--text); background:rgba(255,255,255,0.12); }
 .modal-body { padding:22px 22px 0; }
@@ -289,72 +289,35 @@ main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28p
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuFiJkyJOYqTv1xSpgrGR2NlGmwI_hoehb302WdO9-9Qo-Sshzp7jE-0Ej9mFqkmrgYs2o6K-yQlsd/pub?output=csv';
 
 // ══════════════════════════════════════════════════════════
-//  AUTOCOMPLETE LISTS
+//  AUTOCOMPLETE LISTS — loaded from Google Sheet Players tab
 // ══════════════════════════════════════════════════════════
-const MLB_PLAYERS = [
-  "Aaron Judge","Albert Pujols","Alex Rodriguez","Andrew McCutchen","Barry Bonds",
-  "Babe Ruth","Bryce Harper","Cal Ripken Jr.","Carlos Correa","CC Sabathia",
-  "Clayton Kershaw","Cody Bellinger","David Ortiz","Derek Jeter","Dustin Pedroia",
-  "Edgar Martinez","Fernando Tatis Jr.","Francisco Lindor","Gary Carter","Gerrit Cole",
-  "Greg Maddux","Ichiro Suzuki","Jacob deGrom","Jeff Bagwell","Jim Thome",
-  "Joe Mauer","John Smoltz","Jose Altuve","Juan Soto","Ken Griffey Jr.",
-  "Kris Bryant","Lou Gehrig","Madison Bumgarner","Mariano Rivera","Mark McGwire",
-  "Max Scherzer","Mike Piazza","Mike Trout","Mookie Betts","Nolan Ryan",
-  "Ozzie Smith","Pete Alonso","Randy Johnson","Roberto Clemente","Roger Clemens",
-  "Ronald Acuna Jr.","Roy Halladay","Ryan Howard","Sammy Sosa","Sandy Koufax",
-  "Shohei Ohtani","Ted Williams","Tim Lincecum","Todd Helton","Tom Seaver",
-  "Tony Gwynn","Trea Turner","Trevor Story","Vladimir Guerrero Jr.","Willie Mays",
-  "Yadier Molina","Zack Greinke"
-];
+const PLAYERS_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9OvanCtqofoj6PebP4MoxXbEWKYqTS4QZV8690OK99DIEvcTBXQmL5wBI_aSc0391ZdyLZTbXHGfU/pub?output=csv';
 
-const NBA_PLAYERS = [
-  "Allen Iverson","Anthony Davis","Anthony Edwards","Ben Simmons","Bill Russell",
-  "Blake Griffin","Bradley Beal","Brook Lopez","Charles Barkley","Chris Bosh",
-  "Chris Paul","Clyde Drexler","Damian Lillard","Devin Booker","Dirk Nowitzki",
-  "Dominique Wilkins","Draymond Green","DeMar DeRozan","Giannis Antetokounmpo","James Harden",
-  "Jason Kidd","Jason Tatum","Joel Embiid","John Stockton","Julius Erving",
-  "Karl Malone","Kawhi Leonard","Kevin Durant","Kevin Garnett","Khris Middleton",
-  "Klay Thompson","Kobe Bryant","Kyrie Irving","Larry Bird","LeBron James",
-  "Luka Doncic","Magic Johnson","Michael Jordan","Nikola Jokic","Oscar Robertson",
-  "Patrick Ewing","Paul Pierce","Reggie Miller","Russell Westbrook","Scottie Pippen",
-  "Shaquille O'Neal","Shai Gilgeous-Alexander","Sloane Stephens","Stephen Curry",
-  "Tim Duncan","Tony Parker","Tracy McGrady","Trae Young","Victor Wembanyama",
-  "Vince Carter","Wilt Chamberlain","Zion Williamson"
-];
+let MLB_PLAYERS  = [];
+let NBA_PLAYERS  = [];
+let NFL_PLAYERS  = [];
+let COLLEGES     = [];
 
-const NFL_PLAYERS = [
-  "Aaron Donald","Aaron Rodgers","Adrian Peterson","Barry Sanders","Bo Jackson",
-  "Brady Quinn","Brett Favre","Brian Urlacher","Calvin Johnson","Cam Newton",
-  "Christian McCaffrey","Dan Marino","Davante Adams","Deion Sanders","Derrick Henry",
-  "Dez Bryant","Drew Brees","Ed Reed","Emmitt Smith","Eric Dickerson",
-  "Ja'Marr Chase","Jerry Rice","Jim Brown","Joe Burrow","Joe Montana",
-  "John Elway","Josh Allen","Justin Herbert","Justin Jefferson","Lamar Jackson",
-  "Larry Fitzgerald","Lawrence Taylor","Le'Veon Bell","LaDainian Tomlinson","Marshall Faulk",
-  "Marshawn Lynch","Michael Strahan","Odell Beckham Jr.","Patrick Mahomes","Peyton Manning",
-  "Randy Moss","Ray Lewis","Reggie Bush","Richard Sherman","Rob Gronkowski",
-  "Russell Wilson","Ryan Tannehill","Steve Young","Tom Brady","Terrell Owens",
-  "Travis Kelce","Troy Polamalu","Tyreek Hill","Von Miller","Walter Payton",
-  "Warren Moon","Willie McGinest"
-];
-
-const COLLEGES = [
-  "Air Force","Alabama","Arizona","Arizona State","Arkansas",
-  "Auburn","Baylor","Boston College","BYU","California",
-  "Cincinnati","Clemson","Colorado","Connecticut","Davidson",
-  "Duke","Florida","Florida State","Fresno State","Georgia",
-  "Georgia Tech","Houston","Illinois","Indiana","Iowa",
-  "Iowa State","Kansas","Kansas State","Kentucky","LSU",
-  "Louisville","Maryland","Memphis","Miami","Michigan",
-  "Michigan State","Minnesota","Mississippi State","Missouri","NC State",
-  "Nebraska","North Carolina","Northwestern","Notre Dame","Ohio State",
-  "Oklahoma","Oklahoma State","Ole Miss","Oregon","Oregon State",
-  "Penn State","Pittsburgh","Purdue","Rutgers","San Diego State",
-  "SMU","South Carolina","Southern Illinois","Stanford","Syracuse",
-  "TCU","Temple","Tennessee","Texas","Texas A&M",
-  "Texas Tech","UCLA","UNLV","USC","Utah",
-  "Vanderbilt","Virginia","Virginia Tech","Wake Forest","Washington",
-  "Washington State","West Virginia","Wisconsin","Xavier","None — went straight from high school"
-];
+async function loadPlayerList() {
+  try {
+    const res = await fetch(PLAYERS_SHEET_URL);
+    if (!res.ok) throw new Error('Players tab not found');
+    const text = await res.text();
+    const lines = text.trim().split('\n').slice(1); // skip header
+    for (const line of lines) {
+      const cols = csvRow(line);
+      const name = (cols[0] || '').trim();
+      const type = (cols[1] || '').trim().toUpperCase();
+      if (!name) continue;
+      if (type === 'MLB')     MLB_PLAYERS.push(name);
+      else if (type === 'NBA')     NBA_PLAYERS.push(name);
+      else if (type === 'NFL')     NFL_PLAYERS.push(name);
+      else if (type === 'COLLEGE') COLLEGES.push(name);
+    }
+  } catch(e) {
+    console.warn('Could not load players tab, autocomplete disabled:', e.message);
+  }
+}
 
 // ══════════════════════════════════════════════════════════
 //  STATE
@@ -372,6 +335,7 @@ const ICONS = { MLB:'⚾', NBA:'🏀', NFL:'🏈', '':'🏆' };
 //  BOOT
 // ══════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
+  await loadPlayerList(); // load autocomplete lists first
   try {
     const res = await fetch(SHEET_URL);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
