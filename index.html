@@ -149,12 +149,16 @@ main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28p
 
 /* Autocomplete dropdown */
 .autocomplete-list {
-  position:absolute; top:100%; left:0; right:0;
-  background:#0a2e10; border:1px solid rgba(26,107,42,0.8);
-  border-top:none; border-radius:0 0 10px 10px;
-  max-height:200px; overflow-y:auto;
-  z-index:1000; display:none;
-  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  position:fixed;
+  background:#0a2e10;
+  border:1px solid rgba(26,107,42,0.8);
+  border-radius:10px;
+  max-height:200px;
+  overflow-y:auto;
+  z-index:9999;
+  display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,0.7);
+  min-width:200px;
 }
 .autocomplete-list.open { display:block; }
 .autocomplete-item {
@@ -541,6 +545,7 @@ function getList(q) {
 
 function showAC(val, q) {
   const list = document.getElementById('autocomplete-list');
+  const inp  = document.getElementById('answer-input');
   const term = val.trim().toLowerCase();
   if (term.length < 1) { closeAC(); return; }
 
@@ -554,6 +559,12 @@ function showAC(val, q) {
     const hi = name.replace(new RegExp(`(${escRe(term)})`, 'gi'), '<mark>$1</mark>');
     return `<div class="autocomplete-item" data-idx="${idx}" onmousedown="pickAC('${escAttr(name)}')">${hi}</div>`;
   }).join('');
+
+  // Position using fixed coords from input element
+  const rect = inp.getBoundingClientRect();
+  list.style.top   = (rect.bottom + 4) + 'px';
+  list.style.left  = rect.left + 'px';
+  list.style.width = rect.width + 'px';
 
   list.className = 'autocomplete-list open';
   acIndex = -1;
