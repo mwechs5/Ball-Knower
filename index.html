@@ -393,6 +393,7 @@ function parseCSV(text) {
     const cols = csvRow(line);
     const sq = parseInt(cols[0]);
     if (!sq || sq < 1 || sq > 9) continue;
+    if (!cols[1] && !cols[3]) continue; // skip fully empty rows
 
     // Columns: A=square, B=category, C=image_url, D=question, E=answer, F=also_accept, G=player_name
     const cat      = (cols[1] || '').trim();
@@ -407,8 +408,11 @@ function parseCSV(text) {
 
     const catLower = cat.toLowerCase();
     let roundType = 'identify';
-    if (catLower.includes('college'))  roundType = 'college';
-    if (catLower.includes('career'))   roundType = 'career';
+    if (catLower.includes('college')) roundType = 'college';
+    if (catLower.includes('career'))  roundType = 'career';
+
+    // Extra safety: if question contains -> it's always a career path
+    if (question.includes('->')) roundType = 'career';
 
     qs.push({
       index: sq - 1, category: cat, img: imgUrl,
