@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ball Knower</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:    #0d001a;
+  --card:  #1e003a;
+  --border:#8b00cc;
+  --glow:  #cc00ff;
+  --pink:  #ff00cc;
+  --gold:  #ffd700;
+  --green: #00ff88;
+  --red:   #ff3366;
+  --text:  #f0e6ff;
+  --muted: #9966bb;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(100,0,200,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(200,0,150,0.1) 0%, transparent 50%);
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 8%,  rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 30%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 70%, rgba(255,255,255,0.4) 0%, transparent 100%);
+}
+
+/* HEADER */
+header {
+  position:relative; z-index:10;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 28px;
+  border-bottom:1px solid rgba(139,0,204,0.5);
+  background:rgba(13,0,26,0.92);
+  backdrop-filter:blur(12px);
+}
+.logo-wrap { display:flex; align-items:center; gap:12px; }
+.logo-icon {
+  width:50px; height:50px; background:var(--card);
+  border:2px solid var(--border); border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; box-shadow:0 0 14px rgba(204,0,255,0.35);
+}
+.logo-text {
+  font-family:'Bebas Neue',sans-serif; font-size:1.7rem;
+  letter-spacing:0.06em; color:var(--text); line-height:1;
+  text-shadow:0 0 24px rgba(204,0,255,0.5);
+}
+.logo-sub {
+  font-family:'Barlow Condensed',sans-serif; font-size:0.7rem;
+  font-weight:600; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--muted); display:block;
+}
+.stat-pill {
+  background:var(--card); border:1px solid rgba(139,0,204,0.5);
+  border-radius:8px; padding:6px 14px;
+  font-family:'Barlow Condensed',sans-serif; font-size:0.88rem;
+  font-weight:600; color:var(--muted); letter-spacing:0.04em;
+}
+.stat-pill b { color:var(--gold); }
+
+/* MAIN */
+main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28px 20px 60px; }
+
+/* LOADING */
+#loading-screen { text-align:center; padding:80px 20px; }
+.spinner {
+  width:48px; height:48px; margin:24px auto 0;
+  border:3px solid rgba(139,0,204,0.3); border-top-color:var(--glow);
+  border-radius:50%; animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fade-in { from{opacity:0} to{opacity:1} }
+
+/* GAME */
+#game-screen { display:none; }
+.game-header { text-align:center; margin-bottom:24px; }
+.game-title-badge svg { width:260px; filter:drop-shadow(0 0 18px rgba(204,0,255,0.6)); }
+
+/* GRID */
+.grid-wrap {
+  background:var(--card); border:2px solid var(--border);
+  border-radius:16px; padding:3px;
+  box-shadow:0 0 0 1px rgba(204,0,255,0.2), 0 0 40px rgba(139,0,204,0.3), inset 0 0 40px rgba(0,0,0,0.4);
+}
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; border-radius:14px; overflow:hidden; }
+
+.square {
+  aspect-ratio:1/1; background:linear-gradient(135deg,#1e0038 0%,#2d0052 100%);
+  border:none; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:7px; transition:all 0.2s ease; position:relative; overflow:hidden;
+  padding:12px; text-align:center;
+}
+.square::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(204,0,255,0.08) 0%,transparent 60%);
+  opacity:0; transition:opacity 0.2s;
+}
+.square:hover:not(.done-correct):not(.done-wrong):not(.sq-disabled)::before { opacity:1; }
+.square:hover:not(.done-correct):not(.done-wrong):not(.sq-disabled) {
+  background:linear-gradient(135deg,#280048 0%,#3d0070 100%);
+  box-shadow:inset 0 0 0 2px rgba(204,0,255,0.6), 0 0 24px rgba(204,0,255,0.25);
+  transform:scale(0.97);
+}
+.square:active:not(.done-correct):not(.done-wrong):not(.sq-disabled) { transform:scale(0.94); }
+.square.done-correct { background:linear-gradient(135deg,#003320 0%,#004d2a 100%); box-shadow:inset 0 0 0 2px rgba(0,255,136,0.45); cursor:default; }
+.square.done-wrong   { background:linear-gradient(135deg,#330012 0%,#4d001c 100%); box-shadow:inset 0 0 0 2px rgba(255,51,102,0.45);  cursor:default; }
+.square.sq-disabled  { cursor:default; opacity:0.4; }
+.square:nth-child(4),.square:nth-child(5),.square:nth-child(6) {
+  border-top:2px solid rgba(139,0,204,0.45); border-bottom:2px solid rgba(139,0,204,0.45);
+}
+.sq-icon  { font-size:clamp(1.6rem,4.5vw,2.2rem); line-height:1; }
+.sq-label { font-family:'Barlow Condensed',sans-serif; font-size:clamp(0.68rem,1.9vw,0.92rem); font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text); line-height:1.2; }
+.sq-sport { font-family:'Barlow Condensed',sans-serif; font-size:clamp(0.58rem,1.5vw,0.72rem); font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); }
+.sq-check { font-size:1.6rem; display:none; position:absolute; bottom:10px; right:12px; }
+.square.done-correct .sq-check { display:block; color:var(--green); }
+.square.done-wrong   .sq-check { display:block; color:var(--red); }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.78);
+  backdrop-filter:blur(7px); z-index:200;
+  display:none; align-items:flex-start; justify-content:center;
+  padding:36px 16px; overflow-y:auto;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:linear-gradient(160deg,#1e0038 0%,#2a004a 100%);
+  border:2px solid var(--border); border-radius:16px;
+  width:100%; max-width:560px;
+  box-shadow:0 0 60px rgba(139,0,204,0.5), 0 0 0 1px rgba(204,0,255,0.15);
+  animation:modal-in 0.26s cubic-bezier(0.22,1,0.36,1); overflow:hidden;
+}
+@keyframes modal-in { from{opacity:0;transform:translateY(-18px) scale(0.96)} to{opacity:1;transform:none} }
+
+.modal-top {
+  background:rgba(0,0,0,0.4); border-bottom:1px solid rgba(139,0,204,0.4);
+  padding:10px 16px; display:flex; justify-content:flex-end;
+}
+.modal-close {
+  background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12);
+  border-radius:6px; width:30px; height:30px; color:var(--muted); font-size:1rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s;
+}
+.modal-close:hover { color:var(--text); background:rgba(255,255,255,0.13); }
+
+.modal-body { padding:22px 22px 0; }
+
+.modal-photo {
+  width:100%; height:260px; object-fit:cover; object-position:top center;
+  border-radius:10px; margin-bottom:14px; display:none;
+}
+.modal-photo.visible { display:block; }
+.modal-photo.blurred { filter:blur(16px) brightness(0.6) grayscale(25%); transition:filter 0.55s ease; }
+.modal-photo.clear   { filter:none; transition:filter 0.55s ease; }
+
+.college-name {
+  text-align:center; font-family:'Bebas Neue',sans-serif;
+  font-size:1.55rem; letter-spacing:0.05em; color:var(--text);
+  margin-bottom:6px; display:none;
+}
+.college-name.visible { display:block; }
+
+.modal-q-type {
+  font-family:'Barlow Condensed',sans-serif; font-size:0.72rem;
+  font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:6px;
+}
+.modal-question {
+  font-family:'Barlow Condensed',sans-serif; font-size:1.2rem;
+  font-weight:700; color:var(--text); line-height:1.35; margin-bottom:18px;
+}
+
+.answer-input-wrap { position:relative; margin-bottom:12px; }
+.answer-input {
+  width:100%; background:rgba(0,0,0,0.4);
+  border:2px solid rgba(139,0,204,0.55); border-radius:10px;
+  padding:14px 60px 14px 16px;
+  font-family:'Barlow Condensed',sans-serif; font-size:1.1rem;
+  font-weight:600; color:var(--text); outline:none; transition:border-color 0.18s;
+}
+.answer-input::placeholder { color:var(--muted); font-weight:400; }
+.answer-input:focus { border-color:var(--glow); box-shadow:0 0 16px rgba(204,0,255,0.25); }
+.answer-input:disabled { opacity:0.5; }
+.submit-btn {
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  background:linear-gradient(90deg,var(--pink),var(--glow));
+  border:none; border-radius:7px; padding:7px 14px;
+  font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:0.08em;
+  color:#fff; cursor:pointer; transition:all 0.15s;
+}
+.submit-btn:hover { opacity:0.85; }
+.submit-btn:disabled { opacity:0.3; cursor:default; }
+
+.modal-feedback {
+  display:none; padding:12px 14px; border-radius:8px; margin-bottom:14px;
+  font-family:'Barlow Condensed',sans-serif; font-size:1rem; font-weight:600;
+  gap:8px; align-items:flex-start; line-height:1.4; animation:fade-in 0.25s ease;
+}
+.modal-feedback.show { display:flex; }
+.modal-feedback.correct { background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.3); color:var(--green); }
+.modal-feedback.wrong   { background:rgba(255,51,102,0.08);  border:1px solid rgba(255,51,102,0.3);  color:var(--red); }
+.modal-feedback .fb-ans { color:var(--text); font-weight:700; }
+
+.continue-btn {
+  display:none; width:100%; padding:14px; margin-bottom:22px;
+  background:linear-gradient(90deg,var(--pink),var(--glow));
+  border:none; border-radius:10px;
+  font-family:'Bebas Neue',sans-serif; font-size:1.25rem; letter-spacing:0.12em;
+  color:#fff; cursor:pointer; transition:all 0.17s; animation:fade-in 0.25s ease;
+}
+.continue-btn:hover { opacity:0.85; transform:translateY(-2px); }
+.continue-btn.show { display:block; }
+
+/* RESULTS */
+#results-screen { display:none; text-align:center; padding-top:36px; animation:fade-in 0.4s ease; }
+.res-trophy { font-size:4rem; margin-bottom:10px; filter:drop-shadow(0 0 22px rgba(255,215,0,0.5)); }
+.res-title  { font-family:'Bebas Neue',sans-serif; font-size:2.7rem; color:var(--gold); margin-bottom:4px; }
+.res-sub    { font-family:'Barlow Condensed',sans-serif; font-size:0.88rem; color:var(--muted); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:20px; }
+.res-score  { font-family:'Bebas Neue',sans-serif; font-size:5rem; line-height:1; color:var(--text); margin-bottom:4px; }
+.res-score span { color:var(--gold); }
+.res-score-lbl { font-family:'Barlow Condensed',sans-serif; font-size:0.8rem; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:22px; }
+.res-stats  { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
+.res-stat   { background:var(--card); border:1px solid rgba(139,0,204,0.4); border-radius:10px; padding:14px 20px; min-width:100px; }
+.res-stat b { display:block; font-family:'Bebas Neue',sans-serif; font-size:1.9rem; color:var(--text); }
+.res-stat small { font-family:'Barlow Condensed',sans-serif; font-size:0.7rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+.res-msg { font-family:'Barlow Condensed',sans-serif; font-size:0.93rem; color:var(--muted); background:var(--card); border:1px solid rgba(139,0,204,0.3); border-radius:10px; padding:12px 20px; max-width:320px; margin:0 auto; }
+
+@media(max-width:540px){
+  header { padding:10px 12px; }
+  .logo-text { font-size:1.35rem; }
+  main { padding:16px 10px 40px; }
+  .modal-photo { height:180px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">🏆</div>
+    <div>
+      <div class="logo-text">Ball Knower</div>
+      <span class="logo-sub">Daily Photo Challenge</span>
+    </div>
+  </div>
+  <div class="stat-pill">Score: <b id="score-display">0</b> / <span id="total-display">6</span></div>
+</header>
+
+<main>
+  <!-- LOADING -->
+  <div id="loading-screen">
+    <div style="font-size:3rem;margin-bottom:16px;">🏆</div>
+    <div id="loading-msg" style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;color:var(--muted);letter-spacing:0.08em;">
+      Loading today's questions...
+    </div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen">
+    <div class="game-header">
+      <div class="game-title-badge">
+        <svg viewBox="0 0 320 72" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#cc00ff"/>
+              <stop offset="100%" style="stop-color:#ff00cc"/>
+            </linearGradient>
+          </defs>
+          <polygon points="0,8 286,8 316,36 286,64 0,64" fill="url(#g1)" opacity="0.92"/>
+          <polygon points="2,10 284,10 312,36 284,62 2,62" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <text x="142" y="28" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="15" fill="white" letter-spacing="4" opacity="0.85">BALL KNOWER</text>
+          <text x="142" y="52" text-anchor="middle" font-family="'Barlow Condensed',sans-serif" font-size="20" font-weight="800" fill="white" letter-spacing="1">DAILY CHALLENGE</text>
+        </svg>
+      </div>
+    </div>
+    <div class="grid-wrap">
+      <div class="grid" id="question-grid"></div>
+    </div>
+    <div id="results-screen">
+      <div class="res-trophy" id="res-trophy">🏆</div>
+      <div class="res-title"  id="res-title">Ball Knower!</div>
+      <div class="res-sub">All squares complete</div>
+      <div class="res-score"><span id="res-score">0</span>/<span id="res-total">6</span></div>
+      <div class="res-score-lbl">Correct</div>
+      <div class="res-stats">
+        <div class="res-stat"><b id="res-correct">0</b><small>Correct</small></div>
+        <div class="res-stat"><b id="res-wrong">0</b><small>Wrong</small></div>
+      </div>
+      <div class="res-msg" id="res-msg">🔁 New questions tomorrow!</div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="backdropClose(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <img class="modal-photo" id="modal-photo" src="" alt="Athlete">
+      <div class="college-name" id="college-name"></div>
+      <div class="modal-q-type" id="modal-q-type"></div>
+      <div class="modal-question" id="modal-question"></div>
+      <div class="answer-input-wrap">
+        <input class="answer-input" id="answer-input" type="text"
+               placeholder="Guess an answer..."
+               autocomplete="off" autocorrect="off" spellcheck="false"
+               onkeydown="if(event.key==='Enter')submitAnswer()">
+        <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">GO</button>
+      </div>
+      <div class="modal-feedback" id="modal-feedback"></div>
+      <button class="continue-btn" id="continue-btn" onclick="closeModal()">Close ✕</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  YOUR GOOGLE SHEET — published CSV URL
+// ══════════════════════════════════════════════════════════
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSuFiJkyJOYqTv1xSpgrGR2NlGmwI_hoehb302WdO9-9Qo-Sshzp7jE-0Ej9mFqkmrgYs2o6K-yQlsd/pub?output=csv';
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let questions = [];
+let answered  = {};
+let score     = 0;
+let activeIdx = null;
+let qAnswered = false;
+const ICONS   = { MLB:'⚾', NBA:'🏀', NFL:'🏈', '':'❓' };
+
+// ══════════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const csv = await res.text();
+    parseCSV(csv);
+  } catch(e) {
+    document.getElementById('loading-msg').innerHTML =
+      `<span style="color:#ff3366">Could not load questions.<br>
+       Make sure the sheet is published (File → Share → Publish to web → CSV).<br><br>
+       Error: ${e.message}</span>`;
+    document.querySelector('.spinner').style.display = 'none';
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  CSV PARSER
+// ══════════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const qs = [];
+
+  for (const line of lines) {
+    // Parse CSV row handling quoted fields
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    cols.push(cur.trim());
+
+    // Column layout: A=square, B=category, C=image_url, D=question, E=answer, F=also_accept, G=player_name
+    const sq = parseInt(cols[0]);
+    if (!sq || sq < 1 || sq > 9) continue; // skip header or blank rows
+
+    const cat      = (cols[1] || '').trim();
+    const imgUrl   = (cols[2] || '').trim();
+    const question = (cols[3] || '').trim();
+    const answer   = (cols[4] || '').trim();
+    const alts     = (cols[5] || '').trim();
+    const colName  = (cols[6] || '').trim();
+
+    const accepted = [answer, ...alts.split(',')]
+      .map(a => normalize(a)).filter(Boolean);
+
+    qs.push({
+      index: sq - 1,
+      category: cat,
+      img: imgUrl,
+      question,
+      accepted,
+      displayAnswer: answer,
+      collegeName: colName,
+      roundType: cat.toLowerCase().includes('college') ? 'college' : 'identify',
+      sport: /MLB/i.test(cat) ? 'MLB' : /NBA/i.test(cat) ? 'NBA' : /NFL/i.test(cat) ? 'NFL' : '',
+    });
+  }
+
+  if (!qs.length) {
+    document.getElementById('loading-msg').innerHTML =
+      '<span style="color:#ff3366">No questions found in sheet.<br>Make sure column A has numbers 1–9 and the sheet is published as CSV.</span>';
+    document.querySelector('.spinner').style.display = 'none';
+    return;
+  }
+
+  qs.sort((a, b) => a.index - b.index);
+  questions = Array.from({length: 9}, (_, i) => qs.find(q => q.index === i) || null);
+  answered = {}; score = 0; activeIdx = null; qAnswered = false;
+
+  // Show game
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display    = 'block';
+  document.getElementById('results-screen').style.display = 'none';
+  buildGrid();
+  syncHeader();
+}
+
+// ══════════════════════════════════════════════════════════
+//  IMAGE URL CONVERSION
+// ══════════════════════════════════════════════════════════
+function toImgSrc(url) {
+  if (!url) return '';
+  url = url.trim();
+  // Google Drive share link → direct
+  const drv = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?.*?id=)([a-zA-Z0-9_-]{10,})/);
+  if (drv) return `https://drive.google.com/uc?export=view&id=${drv[1]}`;
+  // Dropbox
+  if (url.includes('dropbox.com')) return url.replace(/[?&]dl=\d/, '').replace(/[?&]raw=\d/, '') + (url.includes('?') ? '&' : '?') + 'raw=1';
+  return url;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GRID
+// ══════════════════════════════════════════════════════════
+function buildGrid() {
+  const grid  = document.getElementById('question-grid');
+  grid.innerHTML = '';
+  const total = questions.filter(Boolean).length;
+  document.getElementById('total-display').textContent = total;
+  document.getElementById('res-total').textContent     = total;
+
+  questions.forEach((q, i) => {
+    const sq = document.createElement('button');
+    sq.id = `sq-${i}`;
+    sq.className = 'square';
+    if (!q) {
+      sq.classList.add('sq-disabled');
+      sq.innerHTML = '<span style="color:var(--muted);font-size:1.8rem">?</span>';
+    } else {
+      const label = q.roundType === 'college' ? 'Name the College' : 'Identify Player';
+      sq.innerHTML = `
+        <div class="sq-icon">${ICONS[q.sport] || '🏆'}</div>
+        <div class="sq-label">${label}</div>
+        <div class="sq-sport">${q.sport}</div>
+        <div class="sq-check"></div>`;
+      sq.onclick = () => openQ(i);
+    }
+    grid.appendChild(sq);
+  });
+}
+
+function syncHeader() {
+  document.getElementById('score-display').textContent = score;
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════════════════
+function openQ(i) {
+  if (answered.hasOwnProperty(i)) return;
+  const q = questions[i];
+  if (!q) return;
+
+  activeIdx = i;
+  qAnswered = false;
+
+  // Photo
+  const photoEl = document.getElementById('modal-photo');
+  const src = toImgSrc(q.img);
+  if (src) {
+    photoEl.src = src;
+    photoEl.className = 'modal-photo visible' + (q.roundType === 'college' ? ' blurred' : '');
+    photoEl.onerror = () => { photoEl.style.display = 'none'; };
+    photoEl.style.display = '';
+  } else {
+    photoEl.className = 'modal-photo';
+    photoEl.style.display = 'none';
+  }
+
+  // College player name
+  const nameEl = document.getElementById('college-name');
+  if (q.roundType === 'college' && q.collegeName) {
+    nameEl.textContent = q.collegeName;
+    nameEl.className = 'college-name visible';
+  } else {
+    nameEl.className = 'college-name';
+  }
+
+  document.getElementById('modal-q-type').textContent =
+    q.roundType === 'college' ? '🎓 Where did they go to college?' : '📸 Who is this?';
+  document.getElementById('modal-question').textContent = q.question;
+
+  const inp = document.getElementById('answer-input');
+  inp.value = ''; inp.disabled = false;
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('modal-feedback').className = 'modal-feedback';
+  document.getElementById('continue-btn').classList.remove('show');
+
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => inp.focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  activeIdx = null;
+  // Check if all done
+  const total = questions.filter(Boolean).length;
+  if (Object.keys(answered).length >= total) showResults();
+}
+
+function backdropClose(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ANSWER
+// ══════════════════════════════════════════════════════════
+function submitAnswer() {
+  if (qAnswered) return;
+  const inp   = document.getElementById('answer-input');
+  const guess = inp.value.trim();
+  if (!guess) { inp.focus(); return; }
+
+  qAnswered = true;
+  inp.disabled = true;
+  document.getElementById('submit-btn').disabled = true;
+
+  const q = questions[activeIdx];
+  const isCorrect = q.accepted.some(a => a === normalize(guess));
+
+  const fb = document.getElementById('modal-feedback');
+  if (isCorrect) {
+    score++;
+    syncHeader();
+    const msgs = ['🔥 Nailed it!','✅ Correct!','🎯 Ball Knower!','💪 Let\'s go!','👑 That\'s a W!'];
+    fb.className = 'modal-feedback show correct';
+    fb.innerHTML = `<span>✅</span><span>${msgs[Math.floor(Math.random()*msgs.length)]}</span>`;
+  } else {
+    fb.className = 'modal-feedback show wrong';
+    fb.innerHTML = `<span>❌</span><span>Not quite — the answer was <span class="fb-ans">${q.displayAnswer}</span></span>`;
+  }
+
+  // Unblur college photo
+  const photo = document.getElementById('modal-photo');
+  photo.classList.remove('blurred'); photo.classList.add('clear');
+
+  // Mark square
+  answered[activeIdx] = isCorrect;
+  const sq = document.getElementById(`sq-${activeIdx}`);
+  if (sq) {
+    sq.classList.add(isCorrect ? 'done-correct' : 'done-wrong');
+    sq.querySelector('.sq-check').textContent = isCorrect ? '✓' : '✗';
+    sq.onclick = null;
+  }
+
+  document.getElementById('continue-btn').classList.add('show');
+}
+
+function normalize(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RESULTS
+// ══════════════════════════════════════════════════════════
+function showResults() {
+  const total = questions.filter(Boolean).length;
+  document.getElementById('res-score').textContent   = score;
+  document.getElementById('res-correct').textContent = score;
+  document.getElementById('res-wrong').textContent   = total - score;
+  document.getElementById('res-total').textContent   = total;
+
+  let trophy='🏆', title='Ball Knower!', msg='🔁 New questions tomorrow!';
+  if      (score === 0)        { trophy='😬'; title='Oh No...';       msg='Hit the film room. Come back tomorrow.'; }
+  else if (score <= 2)         { trophy='📚'; title='Keep Studying!';  msg='You know a little — keep at it.'; }
+  else if (score <= 4)         { trophy='💪'; title='Decent Eye!';     msg='Can you do better tomorrow?'; }
+  else if (score === total - 1){ trophy='🎯'; title='Sharp!';          msg='One away from perfect!'; }
+  else if (score === total)    { trophy='🐐'; title='GOAT Status!';    msg='🔥 Perfect score. Certified Ball Knower.'; }
+
+  document.getElementById('res-trophy').textContent = trophy;
+  document.getElementById('res-title').textContent  = title;
+  document.getElementById('res-msg').textContent    = msg;
+  document.getElementById('results-screen').style.display = 'block';
+  document.getElementById('results-screen').scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+</body>
+</html>
