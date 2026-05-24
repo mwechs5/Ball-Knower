@@ -278,13 +278,15 @@ main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28p
         <input class="answer-input" id="answer-input" type="text"
                placeholder="Guess an answer..." autocomplete="off" autocorrect="off" spellcheck="false">
         <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">GO</button>
-        <div class="autocomplete-list" id="autocomplete-list"></div>
       </div>
       <div class="modal-feedback" id="modal-feedback"></div>
       <button class="continue-btn" id="continue-btn" onclick="closeModal()">Close ✕</button>
     </div>
   </div>
 </div>
+
+<!-- Autocomplete dropdown — lives at body level to avoid any overflow clipping -->
+<div class="autocomplete-list" id="autocomplete-list"></div>
 
 <script>
 // ══════════════════════════════════════════════════════════
