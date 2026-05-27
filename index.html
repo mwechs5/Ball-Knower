@@ -147,26 +147,23 @@ main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28p
 .submit-btn:hover { opacity:0.88; }
 .submit-btn:disabled { opacity:0.3; cursor:default; }
 
-/* Autocomplete dropdown */
+/* Autocomplete dropdown — inline inside modal, no fixed positioning needed */
 .autocomplete-list {
-  position:fixed;
+  display:none;
   background:#0a2e10;
   border:1px solid rgba(26,107,42,0.8);
   border-radius:10px;
-  max-height:200px;
-  overflow-y:auto;
-  z-index:9999;
-  display:none;
-  box-shadow:0 8px 24px rgba(0,0,0,0.7);
-  min-width:200px;
+  overflow:hidden;
+  margin-bottom:10px;
 }
 .autocomplete-list.open { display:block; }
 .autocomplete-item {
-  padding:10px 16px;
+  padding:11px 16px;
   font-family:'Barlow Condensed',sans-serif; font-size:1rem; font-weight:600;
   color:var(--text); cursor:pointer; transition:background 0.12s;
-  letter-spacing:0.02em;
+  letter-spacing:0.02em; border-bottom:1px solid rgba(26,107,42,0.3);
 }
+.autocomplete-item:last-child { border-bottom:none; }
 .autocomplete-item:hover, .autocomplete-item.active { background:rgba(201,162,39,0.15); color:var(--gold); }
 .autocomplete-item mark { background:none; color:var(--gold); font-weight:800; }
 
@@ -279,14 +276,12 @@ main { position:relative; z-index:5; max-width:820px; margin:0 auto; padding:28p
                placeholder="Guess an answer..." autocomplete="off" autocorrect="off" spellcheck="false">
         <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">GO</button>
       </div>
+      <div class="autocomplete-list" id="autocomplete-list"></div>
       <div class="modal-feedback" id="modal-feedback"></div>
       <button class="continue-btn" id="continue-btn" onclick="closeModal()">Close ✕</button>
     </div>
   </div>
 </div>
-
-<!-- Autocomplete dropdown — lives at body level to avoid any overflow clipping -->
-<div class="autocomplete-list" id="autocomplete-list"></div>
 
 <script>
 // ══════════════════════════════════════════════════════════
@@ -498,7 +493,7 @@ function openQ(i) {
     cpTeams.innerHTML = parts.map((p, idx) =>
       idx < parts.length - 1
         ? `${p}<span class="arrow">→</span>`
-        : `<span style="color:var(--text)">${p}</span>`
+        : `${p}`
     ).join('');
     cpEl.className = 'career-path visible';
   } else {
@@ -547,13 +542,12 @@ function getList(q) {
 
 function showAC(val, q) {
   const list = document.getElementById('autocomplete-list');
-  const inp  = document.getElementById('answer-input');
   const term = val.trim().toLowerCase();
   if (term.length < 1) { closeAC(); return; }
 
   const matches = getList(q)
     .filter(n => n.toLowerCase().includes(term))
-    .slice(0, 8);
+    .slice(0, 6);
 
   if (!matches.length) { closeAC(); return; }
 
@@ -561,12 +555,6 @@ function showAC(val, q) {
     const hi = name.replace(new RegExp(`(${escRe(term)})`, 'gi'), '<mark>$1</mark>');
     return `<div class="autocomplete-item" data-idx="${idx}" onmousedown="pickAC('${escAttr(name)}')">${hi}</div>`;
   }).join('');
-
-  // Position using fixed coords from input element
-  const rect = inp.getBoundingClientRect();
-  list.style.top   = (rect.bottom + 4) + 'px';
-  list.style.left  = rect.left + 'px';
-  list.style.width = rect.width + 'px';
 
   list.className = 'autocomplete-list open';
   acIndex = -1;
