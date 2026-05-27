@@ -670,11 +670,11 @@ function showResults() {
   document.getElementById('res-total').textContent   = total;
 
   let trophy='🏆', title='Ball Knower!', msg='🔁 New questions tomorrow!';
-  if      (score===0)        {trophy='😬';title='Oh No...';      msg='Hit the film room. Come back tomorrow.';}
-  else if (score<=2)         {trophy='📚';title='Keep Studying!'; msg='You know a little — keep at it.';}
-  else if (score<=5)         {trophy='💪';title='Decent Eye!';    msg='Can you do better tomorrow?';}
-  else if (score===total-1)  {trophy='🎯';title='Sharp!';         msg='One away from perfect!';}
-  else if (score===total)    {trophy='🐐';title='GOAT Status!';   msg='🔥 Perfect score. Certified Ball Knower.';}
+  if      (score===0)        {trophy='😬';title='Absolutely 0 Ball Knowledge';      msg='Hit the film room. Come back tomorrow.';}
+  else if (score<=2)         {trophy='📚';title='You are an Amatuer Ball Knower'; msg='Ball Knowledge doesn't happen over night, back to work.';}
+  else if (score<=5)         {trophy='💪';title='You're halfway to a true Ball Knower';    msg='Lock in tomorrow.';}
+  else if (score===total-1)  {trophy='🎯';title='Certified Ball Knower';         msg='Almost a Prime Ball Knower.';}
+  else if (score===total)    {trophy='🐐';title='Certified Ball Knower.';   msg='🔥 Perfect score, you watch ball.';}
 
   document.getElementById('res-trophy').textContent = trophy;
   document.getElementById('res-title').textContent  = title;
